@@ -18,7 +18,7 @@ const REMOTE_FILE_NAME = 'lastfm-top-artists.json';
 
 const download = async octokit => {
 	const gist = await octokit.gists.get({ gist_id: GIST_ID }); // get the gist
-	const {content} = gist.data.files.REMOTE_FILE_NAME;
+	const {content} = gist.data.files[REMOTE_FILE_NAME];
 	writeFileSync(LOCAL_FILE_PATH, content);
 }
 
