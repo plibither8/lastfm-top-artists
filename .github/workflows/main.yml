@@ -1,0 +1,37 @@
+name: "Last.fm Top Artists Updater"
+
+on:
+  push:
+    branches:
+      - master
+  schedule:
+    - cron: "0 0 * * *" # Every two hours
+
+jobs:
+  bot:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: "Install Node"
+      uses: actions/setup-node@v1
+      with:
+        node-version: '12.x'
+
+    - name: "Install NPM dependancies"
+      run: npm install
+
+    - name: "Download data.json"
+      run: node data-file download
+      env:
+        GIST_ID: ${{ secrets.GIST_ID }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+    - name: "Run code"
+      run: node index plibither8
+
+    - name: "Upload data.json"
+      run: node data-file upload
+      env:
+        GIST_ID: ${{ secrets.GIST_ID }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
