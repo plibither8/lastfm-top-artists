@@ -1,6 +1,5 @@
 {
 	"username": "",
-	"lastUpdated": "",
-	"prettyPrint": false,
-	"writeFileInLoop": false
+	"prettyPrint": true,
+	"writeInLoop": false
 }

@@ -1,8 +1,6 @@
 const path = require('path');
 const {writeFileSync} = require('fs');
 
-const CONFIG = require('./config.json');
-
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
@@ -75,22 +73,28 @@ const main = async () => {
 		list = {};
 	}
 
-	const filePath = path.join(__dirname, 'data.json');
+	const dataFile = path.join(__dirname, 'data.json');
+	const configFile = path.join(__dirname, 'config.json');
 
 	const startDate = await getStartDate();
 	const todayDate = buildDateString(new Date());
 
 	let currentDate = nextDate(startDate);
+	let previousDate = startDate;
 	while (currentDate !== nextDate(todayDate)) {
 		const FINAL_URL = buildUrl(startDate, currentDate);
 		const html = await fetch(FINAL_URL).then(res => res.text());
 		list[currentDate] = getList(cheerio.load(html));
 
 		console.info('done:', currentDate);
-		writeFileSync(filePath, JSON.stringify(list, null, CONFIG.prettyPrint ? '  ' : null));
+		writeFileSync(dataFile, JSON.stringify(list, null, CONFIG.prettyPrint ? '  ' : null));
 
+		previousDate = currentDate;
 		currentDate = nextDate(currentDate);
 	}
+
+	CONFIG.lastUpdated = previousDate;
+	writeFileSync(configFile, JSON.stringify(CONFIG, null, '  '));
 }
 
 (async () => await main())();
