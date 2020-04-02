@@ -90,6 +90,7 @@ const datePlusOne = date => {
 	return buildDateString(new Date(year, month - 1, day));
 }
 
+// datePlusX
 const nextDate = date => {
 	let x = CONFIG.frequency;
 	while (x-- > 0) {
