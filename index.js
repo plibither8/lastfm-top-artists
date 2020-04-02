@@ -8,7 +8,7 @@ const cheerio = require('cheerio');
 const CONFIG = {
 	username: process.argv[2],
 	prettyPrint: true,
-	writeInLoop: false
+	writeInLoop: true
 };
 
 const TOP_ARTISTS_URL = `https://www.last.fm/user/${CONFIG.username}/library/artists`;
@@ -17,8 +17,14 @@ const TOP_ARTISTS_URL = `https://www.last.fm/user/${CONFIG.username}/library/art
 let data;
 try {
 	data = require('./data.json');
+
+	// If we want data of a new user
+	if (data.username !== CONFIG.username) {
+		throw "New user";
+	}
 } catch (err) {
 	data = {
+		username: CONFIG.username,
 		lastUpdated: "",
 		list: {}
 	}
@@ -100,11 +106,16 @@ const main = async () => {
 	while (currentDate !== nextDate(todayDate)) {
 		const FINAL_URL = buildUrl(firstDate, currentDate);
 		const html = await fetch(FINAL_URL).then(res => res.text());
-		data.list[currentDate] = getList(cheerio.load(html));
+		const dayList = getList(cheerio.load(html));
 
-		console.info('done:', currentDate);
-		if (CONFIG.writeInLoop) {
-			writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+		// Don't store for initial dates where no artists appear
+		if (dayList.length > 0) {
+			data.list[currentDate] = dayList;
+
+			console.info('done:', currentDate);
+			if (CONFIG.writeInLoop) {
+				writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+			}
 		}
 
 		previousDate = currentDate;
