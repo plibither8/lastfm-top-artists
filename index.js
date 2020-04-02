@@ -92,7 +92,7 @@ const main = async () => {
 
 	const firstDate = await getFirstDate();
 	const lastUpdatedDate = getLastUpdatedDate(firstDate);
-	const todayDate = data.lastUpdated = buildDateString(new Date());
+	const todayDate = buildDateString(new Date());
 
 	let currentDate = nextDate(lastUpdatedDate);
 	let previousDate = lastUpdatedDate;
@@ -103,11 +103,16 @@ const main = async () => {
 		data.list[currentDate] = getList(cheerio.load(html));
 
 		console.info('done:', currentDate);
-		writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+		if (CONFIG.writeInLoop) {
+			writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+		}
 
 		previousDate = currentDate;
 		currentDate = nextDate(currentDate);
 	}
+
+	data.lastUpdated = todayDate;
+	writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
 }
 
 (async () => await main())();
