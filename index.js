@@ -6,8 +6,8 @@ const cheerio = require('cheerio');
 
 // Update this before running the script!
 const CONFIG = {
-	username: process.argv[2],
-	frequency: 7,
+	username: process.argv[2] || 'plibither8',
+	frequency: Number(process.argv[3] || 7),
 	prettyPrint: true,
 	writeInLoop: true
 };
@@ -21,12 +21,12 @@ try {
 
 	// If we want data of a new user
 	if (data.username !== CONFIG.username) {
-		throw "New user";
+		throw 'New user';
 	}
 } catch (err) {
 	data = {
 		username: CONFIG.username,
-		lastUpdated: "",
+		lastUpdated: '',
 		list: {}
 	}
 }
@@ -42,7 +42,7 @@ const getFirstDate = async () => {
 }
 
 const getLastUpdatedDate = firstDate => {
-	if (data.lastUpdated === "") {
+	if (data.lastUpdated === '') {
 		return firstDate;
 	}
 
