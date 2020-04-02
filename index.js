@@ -55,7 +55,7 @@ const getLastUpdatedDate = firstDate => {
 	delete data.list[irregularDate];
 
 	// If there are still more items in the list
-	if (data.list.length > 0) return dates.pop();
+	if (dates.length > 0) return dates.pop();
 
 	// Else
 	return firstDate;
