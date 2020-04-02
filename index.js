@@ -7,6 +7,7 @@ const cheerio = require('cheerio');
 // Update this before running the script!
 const CONFIG = {
 	username: process.argv[2],
+	frequency: 7,
 	prettyPrint: true,
 	writeInLoop: true
 };
@@ -30,8 +31,11 @@ try {
 	}
 }
 
+// Quick shorthand function to get raw HTML from URL
+const getHtml = async url => await fetch(url).then(res => res.text());
+
 const getFirstDate = async () => {
-	const html = await fetch(TOP_ARTISTS_URL).then(res => res.text());
+	const html = await getHtml(TOP_ARTISTS_URL);
 	const $ = cheerio.load(html);
 	const firstDate = $('#id_from').val();
 	return firstDate;
@@ -56,7 +60,7 @@ const buildDateString = date => {
 		.join('-');
 }
 
-function nextDate(date) {
+const datePlusOne = date => {
 	const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 	let [year, month, day] = date.split('-').map(Number);
@@ -73,6 +77,15 @@ function nextDate(date) {
 	}
 
 	return buildDateString(new Date(year, month - 1, day));
+}
+
+const nextDate = date => {
+	let x = CONFIG.frequency;
+	while (x-- > 0) {
+		date = datePlusOne(date);
+	}
+
+	return date;
 }
 
 const buildUrl = (firstDate, endDate) => {
@@ -93,37 +106,37 @@ const getList = $ => {
 	return dayList;
 }
 
-const main = async () => {
+const writeData = () => {
 	const dataFile = path.join(__dirname, 'data.json');
+	writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+}
 
+const main = async () => {
 	const firstDate = await getFirstDate();
 	const lastUpdatedDate = getLastUpdatedDate(firstDate);
-	const todayDate = buildDateString(new Date());
-
+	const tomorrowDate = datePlusOne(buildDateString(new Date()));
 	let currentDate = nextDate(lastUpdatedDate);
-	let previousDate = lastUpdatedDate;
 
-	while (currentDate !== nextDate(todayDate)) {
+	while (currentDate < tomorrowDate) {
 		const FINAL_URL = buildUrl(firstDate, currentDate);
-		const html = await fetch(FINAL_URL).then(res => res.text());
+		const html = await getHtml(FINAL_URL);
 		const dayList = getList(cheerio.load(html));
 
 		// Don't store for initial dates where no artists appear
-		if (dayList.length > 0) {
+		if (Object.keys(dayList).length > 0) {
 			data.list[currentDate] = dayList;
+			data.lastUpdated = currentDate;
 
 			console.info('done:', currentDate);
 			if (CONFIG.writeInLoop) {
-				writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+				writeData()
 			}
 		}
 
-		previousDate = currentDate;
 		currentDate = nextDate(currentDate);
 	}
 
-	data.lastUpdated = todayDate;
-	writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
+	writeData();
 }
 
 (async () => await main())();
