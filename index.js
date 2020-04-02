@@ -67,7 +67,14 @@ const getList = $ => {
 }
 
 const main = async () => {
-	const list = require('./data.json');
+	let list;
+
+	try {
+		list = require('./data.json');
+	} catch (err) {
+		list = {};
+	}
+
 	const filePath = path.join(__dirname, 'data.json');
 
 	const startDate = await getStartDate();
