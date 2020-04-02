@@ -1,13 +1,18 @@
 const path = require('path');
-const {writeFile} = require('fs').promises;
+const {writeFileSync} = require('fs');
+
+const CONFIG = require('./config.json');
 
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
-const USERNAME = process.argv[2];
-const TOP_ARTISTS_URL = `https://www.last.fm/user/${USERNAME}/library/artists`;
+const TOP_ARTISTS_URL = `https://www.last.fm/user/${CONFIG.username}/library/artists`;
 
 const getStartDate = async () => {
+	if (CONFIG.lastUpdated !== "") {
+		return CONFIG.lastUpdated;
+	}
+
 	const html = await fetch(TOP_ARTISTS_URL).then(res => res.text());
 	const $ = cheerio.load(html);
 	const startDate = $('#id_from').val();
@@ -62,9 +67,8 @@ const getList = $ => {
 }
 
 const main = async () => {
-	const list = {};
-	const filePath = path.join(__dirname, 'day-list.json');
-	const prettify = true;
+	const list = require('./data.json');
+	const filePath = path.join(__dirname, 'data.json');
 
 	const startDate = await getStartDate();
 	const todayDate = buildDateString(new Date());
@@ -75,9 +79,8 @@ const main = async () => {
 		const html = await fetch(FINAL_URL).then(res => res.text());
 		list[currentDate] = getList(cheerio.load(html));
 
-		console.log('done:', currentDate);
-		// write to file in loop to see live updates (otherwise move out of loop)
-		await writeFile(filePath, JSON.stringify(list, null, prettify ? '  ' : null));
+		console.info('done:', currentDate);
+		writeFileSync(filePath, JSON.stringify(list, null, CONFIG.prettyPrint ? '  ' : null));
 
 		currentDate = nextDate(currentDate);
 	}
