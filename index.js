@@ -20,13 +20,12 @@ try {
 	data = require('./data.json');
 
 	// If we want data of a new user
-	if (data.username !== CONFIG.username) {
-		throw 'New user';
-	}
+	if (data.username !== CONFIG.username) throw 'New user';
 } catch (err) {
 	data = {
 		username: CONFIG.username,
 		lastUpdated: '',
+		irregularLastDate: false,
 		list: {}
 	}
 }
@@ -46,8 +45,20 @@ const getLastUpdatedDate = firstDate => {
 		return firstDate;
 	}
 
-	const dates = Object.keys(data.list);
-	return dates.sort().pop();
+	const dates = Object.keys(data.list).sort();
+
+	// Last entry was not added from outside the while loop
+	if (!data.irregularLastDate) return dates.pop();
+
+	// It was...
+	const irregularDate = dates.pop();
+	delete data.list[irregularDate];
+
+	// If there are still more items in the list
+	if (data.list.length > 0) return dates.pop();
+
+	// Else
+	return firstDate;
 }
 
 const buildDateString = date => {
@@ -92,7 +103,10 @@ const buildUrl = (firstDate, endDate) => {
 	return `${TOP_ARTISTS_URL}?from=${firstDate}&to=${endDate}`;
 }
 
-const getList = $ => {
+const updateList = async (firstDate, currentDate) => {
+	const FINAL_URL = buildUrl(firstDate, currentDate);
+	const html = await getHtml(FINAL_URL);
+	const $ = cheerio.load(html);
 	const dayList = {};
 
 	const rows = $('tr.chartlist-row').slice(0, 50);
@@ -103,7 +117,14 @@ const getList = $ => {
 		dayList[name] = scrobbles;
 	});
 
-	return dayList;
+	// Don't store for initial dates where no artists appear
+	if (Object.keys(dayList).length > 0) {
+		data.list[currentDate] = dayList;
+		data.lastUpdated = currentDate;
+	}
+
+	// Write to console
+	console.info('done:', currentDate);
 }
 
 const writeData = () => {
@@ -114,26 +135,22 @@ const writeData = () => {
 const main = async () => {
 	const firstDate = await getFirstDate();
 	const lastUpdatedDate = getLastUpdatedDate(firstDate);
-	const tomorrowDate = datePlusOne(buildDateString(new Date()));
+	const todayDate = buildDateString(new Date());
+	const tomorrowDate = datePlusOne(todayDate);
 	let currentDate = nextDate(lastUpdatedDate);
 
 	while (currentDate < tomorrowDate) {
-		const FINAL_URL = buildUrl(firstDate, currentDate);
-		const html = await getHtml(FINAL_URL);
-		const dayList = getList(cheerio.load(html));
-
-		// Don't store for initial dates where no artists appear
-		if (Object.keys(dayList).length > 0) {
-			data.list[currentDate] = dayList;
-			data.lastUpdated = currentDate;
-
-			console.info('done:', currentDate);
-			if (CONFIG.writeInLoop) {
-				writeData()
-			}
-		}
-
+		await updateList(firstDate, currentDate);
 		currentDate = nextDate(currentDate);
+
+		if (CONFIG.writeInLoop) writeData();
+	}
+
+	if (currentDate < nextDate(todayDate)) {
+		await updateList(firstDate, todayDate);
+		data.irregularLastDate = true;
+	} else {
+		data.irregularLastDate = false;
 	}
 
 	writeData();
