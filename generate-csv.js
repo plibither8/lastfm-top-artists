@@ -1,9 +1,9 @@
 const path = require('path');
 const {writeFile} = require('fs').promises;
 
-const data = require('./day-list.json').list;
+const data = require('./data.json').list;
 
-const csvFile = path.join(__dirname, 'day-list.csv');
+const csvFile = path.join(__dirname, 'data.csv');
 const entries = ['date,name,category,value'];
 
 for (const [date, list] of Object.entries(data)) {

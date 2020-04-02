@@ -4,17 +4,40 @@ const {writeFileSync} = require('fs');
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
+// Update this before running the script!
+const CONFIG = {
+	username: process.argv[2],
+	prettyPrint: true,
+	writeInLoop: false
+};
+
 const TOP_ARTISTS_URL = `https://www.last.fm/user/${CONFIG.username}/library/artists`;
 
-const getStartDate = async () => {
-	if (CONFIG.lastUpdated !== "") {
-		return CONFIG.lastUpdated;
+// Preparing main data object
+let data;
+try {
+	data = require('./data.json');
+} catch (err) {
+	data = {
+		lastUpdated: "",
+		list: {}
 	}
+}
 
+const getFirstDate = async () => {
 	const html = await fetch(TOP_ARTISTS_URL).then(res => res.text());
 	const $ = cheerio.load(html);
-	const startDate = $('#id_from').val();
-	return startDate;
+	const firstDate = $('#id_from').val();
+	return firstDate;
+}
+
+const getLastUpdatedDate = firstDate => {
+	if (data.lastUpdated === "") {
+		return firstDate;
+	}
+
+	const dates = Object.keys(data.list);
+	return dates.sort().pop();
 }
 
 const buildDateString = date => {
@@ -46,8 +69,8 @@ function nextDate(date) {
 	return buildDateString(new Date(year, month - 1, day));
 }
 
-const buildUrl = (startDate, endDate) => {
-	return `${TOP_ARTISTS_URL}?from=${startDate}&to=${endDate}`;
+const buildUrl = (firstDate, endDate) => {
+	return `${TOP_ARTISTS_URL}?from=${firstDate}&to=${endDate}`;
 }
 
 const getList = $ => {
@@ -65,36 +88,26 @@ const getList = $ => {
 }
 
 const main = async () => {
-	let list;
-
-	try {
-		list = require('./data.json');
-	} catch (err) {
-		list = {};
-	}
-
 	const dataFile = path.join(__dirname, 'data.json');
-	const configFile = path.join(__dirname, 'config.json');
 
-	const startDate = await getStartDate();
-	const todayDate = buildDateString(new Date());
+	const firstDate = await getFirstDate();
+	const lastUpdatedDate = getLastUpdatedDate(firstDate);
+	const todayDate = data.lastUpdated = buildDateString(new Date());
 
-	let currentDate = nextDate(startDate);
-	let previousDate = startDate;
+	let currentDate = nextDate(lastUpdatedDate);
+	let previousDate = lastUpdatedDate;
+
 	while (currentDate !== nextDate(todayDate)) {
-		const FINAL_URL = buildUrl(startDate, currentDate);
+		const FINAL_URL = buildUrl(firstDate, currentDate);
 		const html = await fetch(FINAL_URL).then(res => res.text());
-		list[currentDate] = getList(cheerio.load(html));
+		data.list[currentDate] = getList(cheerio.load(html));
 
 		console.info('done:', currentDate);
-		writeFileSync(dataFile, JSON.stringify(list, null, CONFIG.prettyPrint ? '  ' : null));
+		writeFileSync(dataFile, JSON.stringify(data, null, CONFIG.prettyPrint ? '  ' : null));
 
 		previousDate = currentDate;
 		currentDate = nextDate(currentDate);
 	}
-
-	CONFIG.lastUpdated = previousDate;
-	writeFileSync(configFile, JSON.stringify(CONFIG, null, '  '));
 }
 
 (async () => await main())();
