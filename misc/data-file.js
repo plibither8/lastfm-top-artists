@@ -55,10 +55,12 @@ const upload = async () => {
 		};
 	}
 
-	await fetch(
+	const res = await fetch(
 		GH_API_URL,
 		getFetchOptions('PATCH', GITHUB_TOKEN, {files})
 	);
+
+	console.log(res.status);
 }
 
 (async () => {
