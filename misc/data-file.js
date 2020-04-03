@@ -1,7 +1,7 @@
 const path = require('path');
 const {writeFileSync, readFileSync} = require('fs');
 
-const {Octokit} = require('@octokit/rest');
+const Octokit = require('@octokit/rest');
 const fetch = require('node-fetch');
 
 // GitHub Gists env variables
@@ -19,9 +19,7 @@ const localFileNames = {
 // 'download' || 'upload'
 const CHOICE = process.argv[2];
 
-const octokit = new Octokit({ auth: `token ${GITHUB_TOKEN}` }) // Instantiate Octokit
-
-const download = async () => {
+const download = async octokit => {
 	const gist = await octokit.gists.get({ gist_id: GIST_ID });
 	for (const [fileName, file] of Object.entries(gist.data.files)) {
 		const filePath = path.join(__dirname, '../', localFileNames[fileName]);
@@ -29,7 +27,7 @@ const download = async () => {
 	}
 }
 
-const upload = async () => {
+const upload = async octokit => {
 	const files = {};
 	for (const [remote, local] of Object.entries(localFileNames)) {
 		const filePath = path.join(__dirname, '../', local);
@@ -47,6 +45,8 @@ const upload = async () => {
 }
 
 (async () => {
+	const octokit = new Octokit({ auth: `token ${GITHUB_TOKEN}` }) // Instantiate Octokit
+
 	switch (CHOICE) {
 		case 'download':
 			await download(octokit);
