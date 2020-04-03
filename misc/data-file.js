@@ -1,6 +1,7 @@
 const path = require('path');
 const {writeFileSync, readFileSync} = require('fs');
 
+const {Octokit} = require('@octokit/rest');
 const fetch = require('node-fetch');
 
 // GitHub Gists env variables
@@ -9,42 +10,24 @@ const {
 	GITHUB_TOKEN
 } = process.env;
 
-// 'download' || 'upload'
-const CHOICE = process.argv[2];
-
-const GH_API_URL = 'https://api.github.com/gists/' + GIST_ID;
-
 // stupid config for keeping things simple
 const localFileNames = {
 	'lastfm-top-artists.json': 'data.json',
 	'unique-artists.json': 'artists.json'
 };
 
-const getFetchOptions = (method, authString, body) => {
-	const base64AuthString = Buffer.from(authString).toString('base64');
-	return {
-		method,
-		headers: {
-			'Content-Type': 'application/json',
-			'Authorization': 'Basic ' + base64AuthString
-		},
-		...(body ? {body: JSON.stringify(body)} : {})
-	}
-}
+// 'download' || 'upload'
+const CHOICE = process.argv[2];
 
-const download = async () => {
-	const gist = await fetch(
-		GH_API_URL,
-		getFetchOptions('GET', GITHUB_TOKEN)
-	).then(res => res.json());
-
-	for (const [fileName, file] of Object.entries(gist.files)) {
+const download = async octokit => {
+	const gist = await octokit.gists.get({ gist_id: GIST_ID });
+	for (const [fileName, file] of Object.entries(gist.data.files)) {
 		const filePath = path.join(__dirname, '../', localFileNames[fileName]);
 		writeFileSync(filePath, file.content);
 	}
 }
 
-const upload = async () => {
+const upload = async octokit => {
 	const files = {};
 	for (const [remote, local] of Object.entries(localFileNames)) {
 		const filePath = path.join(__dirname, '../', local);
@@ -55,21 +38,21 @@ const upload = async () => {
 		};
 	}
 
-	const res = await fetch(
-		GH_API_URL,
-		getFetchOptions('PATCH', GITHUB_TOKEN, {files})
-	);
-
-	console.log(res.status);
+	await octokit.gists.update({
+		gist_id: GIST_ID,
+		files
+	});
 }
 
 (async () => {
+	const octokit = new Octokit({ auth: `token ${GITHUB_TOKEN}` }) // Instantiate Octokit
+
 	switch (CHOICE) {
 		case 'download':
-			await download();
+			await download(octokit);
 			break;
 		case 'upload':
-			await upload();
+			await upload(octokit);
 			break;
 	}
 })();
