@@ -21,8 +21,8 @@ jobs:
     - name: "Install NPM dependancies"
       run: npm install
 
-    - name: "Download data.json"
-      run: node data-file download
+    - name: "Download JSON files"
+      run: node misc/data-file download
       env:
         GIST_ID: ${{ secrets.GIST_ID }}
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -30,8 +30,15 @@ jobs:
     - name: "Run code"
       run: node index plibither8
 
-    - name: "Upload data.json"
-      run: node data-file upload
+    - name: "Get new unique artists data"
+      run: node misc/artist-images
+      env:
+        LASTFM_KEY: ${{ secrets.LASTFM_KEY }}
+        SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+        SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+
+    - name: "Upload JSON files"
+      run: node misc/data-file upload
       env:
         GIST_ID: ${{ secrets.GIST_ID }}
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

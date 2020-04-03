@@ -15,11 +15,11 @@ You must have Node.js and npm installed.
 1. Install dependencies: `npm install`
 1. Run the file with your username and desired frequency (optional): `node index <USERNAME> <FREQUENCY>`
 
-To generate a CSV file of the data collected: `node generate-csv`. Make sure the `data.json` file is there.
+To generate a CSV file of the data collected: `node misc/generate-csv`. Make sure the `data.json` file is there.
 
 ### GitHub Actions
 
-To automate this and run it every day, I have enabled [GitHub Actions](.github/workflows/main.yml). You can fork the repository and setup your own. Remember to set `GH_TOKEN` and `GIST_ID` environment secrets.
+To automate this and run it every day and store the data as GitHub Gist, I have enabled [GitHub Actions](.github/workflows/main.yml). It makes use of the [`misc/data-file.js`](misc/data-file.js) file. You can fork the repository and setup your own. Remember to set `GH_TOKEN` and `GIST_ID` environment secrets.
 
 ## License
 

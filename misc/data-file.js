@@ -19,27 +19,28 @@ const localFileNames = {
 // 'download' || 'upload'
 const CHOICE = process.argv[2];
 
-// 'lastfm-top-artists.json' || 'unique-artists.json'
-const REMOTE_FILE_NAME = process.argv[3];
-const LOCAL_FILE_NAME = localFileNames[REMOTE_FILE_NAME];
-const LOCAL_FILE_PATH = path.join(__dirname, '../', LOCAL_FILE_NAME);
-
 const download = async octokit => {
-	const gist = await octokit.gists.get({ gist_id: GIST_ID }); // get the gist
-	const {content} = gist.data.files[REMOTE_FILE_NAME];
-	writeFileSync(LOCAL_FILE_PATH, content);
+	const gist = await octokit.gists.get({ gist_id: GIST_ID });
+	for (const [fileName, file] of Object.entries(gist.data.files)) {
+		const filePath = path.join(__dirname, '../', localFileNames[fileName]);
+		writeFileSync(filePath, file.content);
+	}
 }
 
 const upload = async octokit => {
-	const content = readFileSync(LOCAL_FILE_PATH, 'utf-8');
+	const files = {};
+	for (const [remote, local] of Object.entries(localFileNames)) {
+		const filePath = path.join(__dirname, '../', local);
+		const content = readFileSync(filePath, 'utf-8');
+		files[remote] = {
+			filename: remote,
+			content
+		};
+	}
+
 	await octokit.gists.update({
 		gist_id: GIST_ID,
-		files: {
-			[REMOTE_FILE_NAME]: {
-				filename: REMOTE_FILE_NAME,
-				content
-			}
-		}
+		files
 	});
 }
 
