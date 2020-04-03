@@ -19,7 +19,9 @@ const localFileNames = {
 // 'download' || 'upload'
 const CHOICE = process.argv[2];
 
-const download = async octokit => {
+const octokit = new Octokit({ auth: `token ${GITHUB_TOKEN}` }) // Instantiate Octokit
+
+const download = async () => {
 	const gist = await octokit.gists.get({ gist_id: GIST_ID });
 	for (const [fileName, file] of Object.entries(gist.data.files)) {
 		const filePath = path.join(__dirname, '../', localFileNames[fileName]);
@@ -27,7 +29,7 @@ const download = async octokit => {
 	}
 }
 
-const upload = async octokit => {
+const upload = async () => {
 	const files = {};
 	for (const [remote, local] of Object.entries(localFileNames)) {
 		const filePath = path.join(__dirname, '../', local);
@@ -45,8 +47,6 @@ const upload = async octokit => {
 }
 
 (async () => {
-	const octokit = new Octokit({ auth: `token ${GITHUB_TOKEN}` }) // Instantiate Octokit
-
 	switch (CHOICE) {
 		case 'download':
 			await download(octokit);
