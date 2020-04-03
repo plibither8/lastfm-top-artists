@@ -8,6 +8,8 @@
 
 Collect a Last.fm user's [_all time_ top artists](https://last.fm/user/plibither8/library/artists) through all the dates from the time they started scrobbling till now (depending on the set frequency, default is set to `7`: a week).
 
+[See mine](https://gist.github.com/plibither8/19e1bf4e5306fe95a8ca62400b07b6fe) (plibither8) for an example.
+
 ## Instructions
 
 You must have Node.js and npm installed.
